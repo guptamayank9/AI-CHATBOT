@@ -18,3 +18,412 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log("Server Running at PORT:", PORT);
 });
+
+OPEN ROUTER WE CREATE an api key
+
+
+for app.js==Frontend (port 5173) aur backend (port 5000) browser ke liye do alag websites hain, aur wo unke beech baat by default rok deta hai. cors backend ki taraf se bolta hai "ye frontend trusted hai".
+app.get('/') ek test route hai, jisse browser mein dekh sakte ho ki server zinda hai.
+//Backend==>
+
+server.js
+   ↓
+Server start + Socket.io
+
+app.js
+   ↓
+Express application + HTTP routes + middleware
+
+ai.service.js
+   ↓
+OpenRouter + AI response
+
+app.js
+= Express ko configure karta hai
+
+server.js
+= Server + Socket.io ko start karta hai
+
+ai.service.js
+= AI se baat karta hai
+
+
+CORS ka means:
+CORS middleware browser ko allowed origin batane mein help karta hai.
+Cross-Origin Resource Sharing
+
+
+const http = require('http');
+
+Ye Node.js ka built-in http module hai.
+
+Ab question:
+
+Express app hai toh http kyun?
+
+Normally Express mein:
+
+app.listen(5000)
+
+kar sakte hain.
+
+Lekin Socket.io ko server ke saath attach karna hai.
+
+// Express app--->http server--->Socket.io
+const {createServer} = require('http');
+
+const {Server} =require('socket.io');
+
+model? kyo use kiye?
+
+Ab:
+
+temperature: 0.7,
+
+Ye response ki variability/creativity control
+    //low temperature
+// → more predictable
+
+// higher temperature
+// → more varied
+          temperature: 0.7,
+          top_p: 0.9,
+
+top_p: 0.9
+
+Ye bhi response generation ko control karta hai.
+
+// dotenv package ko load kar rahe hain
+// Iska kaam .env file ke variables ko process.env me available karna hai
+require("dotenv").config();
+
+
+// Ye function user ke prompt ko AI ke paas bhejega
+// aur AI ka response return karega
+//
+// prompt = user ka question/message
+
+const getAIResponse = async (prompt) => {
+
+    // try block ke andar hum wo code likhte hain
+    // jisme error aa sakta hai
+    try {
+
+        // .env file se OpenRouter API key le rahe hain
+        // process.env ke andar .env ke variables available hote hain
+        const OPENROUTER_API_KEY =
+            process.env.OPENROUTER_API_KEY;
+
+
+        // .env se AI model ka naam le rahe hain
+        //
+        // || ka matlab:
+        // agar OPENROUTER_MODEL available nahi hai
+        // to default model use karo
+        const OPENROUTER_MODEL =
+            process.env.OPENROUTER_MODEL ||
+            "google/gemini-2.0-flash-001";
+
+
+        // Check kar rahe hain ki API key mili ya nahi
+        //
+        // ! ka matlab NOT
+        // Agar API key nahi hai to error throw hoga
+        if (!OPENROUTER_API_KEY) {
+
+            throw new Error(
+                "No API key configured. Please set OPENROUTER_API_KEY."
+            );
+        }
+
+
+        // fetch() ka use karke OpenRouter API ko request bhej rahe hain
+        //
+        // await ka matlab:
+        // response aane tak wait karo
+        //
+        // fetch() ek Promise return karta hai
+        const response = await fetch(
+            "https://openrouter.ai/api/v1/chat/completions",
+            {
+
+                // POST ka matlab hum server ko data bhej rahe hain
+                method: "POST",
+
+
+                // headers API ko request ke baare me
+                // additional information dete hain
+                headers: {
+
+                    // API key ko Authorization header me bhej rahe hain
+                    //
+                    // Bearer ke baad hamari secret API key hoti hai
+                    Authorization:
+                        `Bearer ${OPENROUTER_API_KEY}`,
+
+
+                    // Hum API ko bata rahe hain ki
+                    // request ka data JSON format me hai
+                    "Content-Type":
+                        "application/json",
+
+
+                    // Ye batata hai request kis website/app se aa rahi hai
+                    "HTTP-Referer":
+                        "http://localhost:5173",
+
+
+                    // OpenRouter dashboard me application ka naam
+                    // identify karne ke liye
+                    "X-Title":
+                        "ChattyBot"
+                },
+
+
+                // body ke andar hum actual data bhej rahe hain
+                //
+                // JSON.stringify()
+                // JavaScript object ko JSON string me convert karta hai
+                body: JSON.stringify({
+
+                    // OpenRouter ko batate hain
+                    // ki kaunsa AI model use karna hai
+                    model: OPENROUTER_MODEL,
+
+
+                    // messages ke andar AI ko conversation bhejte hain
+                    messages: [
+
+                        {
+                            // system message AI ki personality/
+                            // instructions define karta hai
+                            role: "system",
+
+                            // AI ko instruction de rahe hain
+                            content:
+                                "You are a helpful, friendly and knowledgeable AI assistant."
+                        },
+
+
+                        {
+                            // user ka actual message
+                            role: "user",
+
+                            // jo prompt function me receive hua tha
+                            // wahi AI ko bhej rahe hain
+                            content: prompt
+                        }
+                    ],
+
+
+                    // temperature AI ke response ki creativity/
+                    // randomness control karta hai
+                    //
+                    // 0 ke paas = zyada predictable
+                    // higher value = zyada creative/random
+                    temperature: 0.7,
+
+
+                    // top_p bhi response generation ko control karta hai
+                    top_p: 0.9
+                })
+            }
+        );
+
+
+        // API se jo response mila hai
+        // usko JSON format me convert kar rahe hain
+        const data = await response.json();
+
+
+        // response.ok check karta hai ki HTTP request successful thi ya nahi
+        //
+        // Agar API ne error response diya hai
+        // to response.ok false hoga
+        if (!response.ok) {
+
+            // API ke error message ko extract kar rahe hain
+            //
+            // ?. optional chaining hai
+            // Agar error ya message exist nahi karta
+            // to crash nahi hoga
+            throw new Error(
+                data.error?.message ||
+                "OpenRouter API error"
+            );
+        }
+
+
+        // Successful response me AI ka actual text
+        // data.choices[0].message.content ke andar hota hai
+        //
+        // ?. ka use isliye kiya hai taaki
+        // agar koi property missing ho to error na aaye
+        return (
+            data.choices[0]?.message?.content ||
+
+            // Agar AI response empty hua
+            // to ye fallback message return hoga
+            "I couldn't generate a response."
+        );
+
+
+    } catch (error) {
+
+        // Agar try block me koi bhi error aaya
+        // to yaha control aa jayega
+
+        // Terminal me actual error print karenge
+        console.error(
+            "AI Service Error:",
+            error
+        );
+
+
+        // User ko technical error ka simple message denge
+        // Actual error user ko nahi dikhayenge
+        return "Sorry, I'm having some technical difficulties. Please try again.";
+    }
+};
+
+
+// Function ko export kar rahe hain
+//
+// Iski wajah se server.js ke andar hum likh sakte hain:
+//
+// const { getAIResponse } = require("./src/services/ai.service");
+module.exports = {
+    getAIResponse
+};
+
+
+socket = ek particular connected user ka connection.
+Aur:
+socket.id
+us connection ki unique ID hoti hai.
+
+
+// .env file ki values load karne ke liye
+require("dotenv").config();
+
+
+// Node.js ka HTTP server create karne ke liye
+const { createServer } = require("http");
+
+
+// Socket.IO server ke liye
+const { Server } = require("socket.io");
+
+
+// Express app import kar rahe hain
+const app = require("./src/app");
+
+
+// AI service se function import kar rahe hain
+const { getAIResponse } =
+    require("./src/services/ai.service");
+
+
+// Express app ko HTTP server ke saath attach kar rahe hain
+const httpServer = createServer(app);
+
+
+// HTTP server ke upar Socket.IO server create kar rahe hain
+const io = new Server(httpServer, {
+
+    cors: {
+
+        // React/Vite frontend ko connection allow kar rahe hain
+        origin: "http://localhost:5173",
+
+        // Allowed methods
+        methods: ["GET", "POST"]
+    }
+});
+
+
+// Jab koi user Socket.IO se connect karega
+io.on("connection", (socket) => {
+
+    console.log(
+        `✅ User connected: ${socket.id}`
+    );
+
+
+    // Jab user disconnect karega
+    socket.on("disconnect", () => {
+
+        console.log(
+            `❌ User disconnected: ${socket.id}`
+        );
+
+    });
+
+
+    // Frontend se AI message receive karna
+    socket.on("ai-message", async (data) => {
+
+        try {
+
+            console.log(
+                `📨 Message from ${socket.id}:`,
+                data.prompt
+            );
+
+
+            // AI service ko user ka prompt bhejna
+            const response =
+                await getAIResponse(data.prompt);
+
+
+            // AI response frontend ko bhejna
+            socket.emit("ai-response", {
+                response
+            });
+
+
+            console.log(
+                `✅ Response sent to ${socket.id}`
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "❌ Error processing message:",
+                error
+            );
+
+
+            // Error hone par frontend ko message bhejna
+            socket.emit("ai-response", {
+
+                response:
+                    "Sorry, I couldn't process your message right now."
+
+            });
+
+        }
+
+    });
+
+});
+
+
+// Server ka port
+const PORT =
+    process.env.PORT || 3000;
+
+
+// Server start karna
+httpServer.listen(PORT, () => {
+
+    console.log(
+        `🚀 Server is running on port ${PORT}`
+    );
+
+    console.log(
+        `🌐 Socket.IO server is ready`
+    );
+
+});
