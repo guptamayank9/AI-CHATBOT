@@ -1,0 +1,20 @@
+const express = require('express');
+//basiccs server running
+const app = express();
+
+const PORT = 4000;
+
+app.use(express.json());
+
+app.get('/', (req, res) => {
+    console.log("API working fine");
+    res.json({
+        message: "API working fine"
+    });
+    or
+    res.send("api working")//ye text bhjna ke liye hota hai
+});
+
+app.listen(PORT, () => {
+    console.log("Server Running at PORT:", PORT);
+});
