@@ -3,11 +3,7 @@ import { io } from "socket.io-client";
 import ReactMarkdown from "react-markdown";
 const App = () => {
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState(() => {
-  const savedMessages = localStorage.getItem("chatMessages");
-
-  return savedMessages ? JSON.parse(savedMessages) : [];
-});
+  const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
 
   //this is for auto scroll the mssg
@@ -81,10 +77,6 @@ const App = () => {
     setMessage("");
   };
 
-   // Save messages to localStorage
-  useEffect(() => {
-    localStorage.setItem("chatMessages", JSON.stringify(messages));
-  }, [messages]);
 
   return (
     <div className="h-screen bg-gray-950 text-white flex flex-col">
