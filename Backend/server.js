@@ -23,7 +23,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer,{
     cors:{
         // React/Vite frontend ko connection allow kar rahe hain
-        origin:"http:localhost:5173",
+        origin:true,
         methods:["GET","POST"]
     }
 });
@@ -43,9 +43,12 @@ io.on("connection",(socket)=>{
 
 
  // Frontend se AI message receive karna
-    socket.io("ai-message",async (data) => {
+    socket.on("ai-message",async (data) => {
        console.log(`Message Received: ${socket.id} ,data.prompt`);
        
+      // AI response generate hone tak frontend ko batao
+        socket.emit("ai-typing");
+
        // AI service ko user ka prompt bhejna
        const response = await getAIResponse(data.prompt);
 
@@ -57,12 +60,13 @@ io.on("connection",(socket)=>{
     });
     } catch(error){
         console.error("❌ Error processing message:",error);
+        
      // Error hone par frontend ko message bhejna
     socket.emit("ai-response", {
         response:
             "Sorry, I couldn't process your message right now."
     });
-    }
+}
    
 
 });

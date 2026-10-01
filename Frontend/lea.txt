@@ -1,0 +1,240 @@
+const [message,setMessage] = useState("");
+ <input type="text"
+            value={message}
+            onChange={(e)=>setMessage(e.target.value)}
+            placeholder='Message ChattyBot....'
+            className='flex-1 bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-blue-500' />
+onChange={(e) => setMessage(e.target.value)}
+
+Jab bhi user type karega:
+
+User types "H"
+       ↓
+onChange
+       ↓
+e.target.value = "H"
+       ↓
+setMessage("H")
+       ↓
+message = "H"
+
+value={message} kyu?
+Ye input ko React state ke control me rakhta hai.
+
+message state
+    ↕
+ input
+
+Isko controlled input bolte hain.
+
+message.trim() kyu?
+
+
+Agar user sirf spaces daal de:
+"     "
+to usko valid message nahi maanna.
+!message.trim()
+means:
+message empty hai ya sirf spaces hain.
+
+
+
+useEffect(() => {
+
+  socket.on("ai-response", (data) => {
+
+    const aiMessage = {
+      role: "assistant",
+      content: data.response
+    };
+
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      aiMessage
+    ]);
+
+  });
+
+}, []);
+
+Ab AI response bhi messages array me aa jayega.
+
+Example:
+
+messages = [
+  {
+    role: "user",
+    content: "What is React?"
+  },
+
+  {
+    role: "assistant",
+    content: "React is a JavaScript library..."
+  }
+];
+
+useEffect(() => {
+
+  socket.on("ai-response", (data) => {
+
+    console.log("AI Response:", data);
+
+  });
+
+}, []);
+
+Ab flow:
+Backend
+↓
+socket.emit("ai-response")↓
+Frontend ↓
+socket.on("ai-response")   ↓
+data.response
+
+
+import React, { useEffect, useRef, useState } from "react";
+useState
+  → data store/change
+
+useEffect
+  → component ke side effects
+
+useRef
+  → socket connection ko preserve karn
+
+useRef kyu?
+Socket ek connection hai. Hume chahiye ki React ke re-render hone par naya connection na bane.
+
+[] ka kya matlab?
+useEffect(() => {
+   // code
+}, []);
+
+Empty dependency array ka matlab:
+
+Component mount hone par ye effect run karo.
+
+So socket connection baar-baar create nahi hoga.
+
+
+Ai REsponse listener
+useEffect me:
+
+useEffect(() => {
+
+  socketRef.current = io("http://localhost:3000");
+
+
+  socketRef.current.on("connect", () => {
+
+    console.log(
+      "✅ Connected to server:",
+      socketRef.current.id
+    );
+
+  });
+
+
+  // Backend se AI response receive
+  socketRef.current.on("ai-response", (data) => {
+
+    console.log("🤖 AI Response:", data.response);
+
+
+    const aiMessage = {
+      role: "assistant",
+      content: data.response
+    };
+
+
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      aiMessage
+    ]);
+
+  });
+
+
+  return () => {
+
+    socketRef.current.disconnect();
+
+  };
+
+}, []);
+
+Ab complete communication:
+
+Backend
+   │
+   │ "ai-response"
+   ▼
+socketRef.current.on()
+   │
+   ▼
+data.response
+   │
+   ▼
+aiMessage
+   │
+   ▼
+setMessages()
+   │
+   ▼
+React UI
+
+Enter key support 🔥
+
+Ab user ko har baar Send button click nahi karna padega.
+ <input type="text"
+            value={message}
+            onChange={(e)=>setMessage(e.target.value)}
+            placeholder='Message ChattyBot....'
+            onKeyDown={(e)=>{
+              if(e.key === "Enter"){
+                handleSend();
+              }
+
+              User types
+     ↓
+Enter
+     ↓
+onKeyDown
+     ↓
+e.key === "Enter"
+     ↓
+handleSend()
+     ↓
+Socket.IO
+
+
+*React** is a JavaScript library.
+
+1. Component
+2. State
+3. Props
+
+aise raw text me aa raha hai.
+
+Hum chahte hain:
+
+**React** → React
+# React → heading
+1. Component → proper list
+
+Iske liye react-markdown use karenge.
+reactmarkdown use isliye kare ki phle ai respnse ** me de rha tha isliye text ko raw karne ke liye ke react-markdown use kare hai
+
+
+Send button disable + loading state karenge, taaki AI response aane ke time user 10 baar same message send na kar sake.
+<button
+  onClick={handleSend}
+  disabled={isTyping}
+  className={`px-5 rounded-xl ${
+    isTyping
+      ? "bg-gray-700 cursor-not-allowed"
+      : "bg-blue-600 hover:bg-blue-700"
+  }`}
+>
+  {isTyping ? "Thinking..." : "Send"}
+</button>
