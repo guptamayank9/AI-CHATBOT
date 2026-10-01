@@ -18,7 +18,7 @@ const App = () => {
   //socket connection
   useEffect(() => {
     // Backend Socket.IO server se connect
-    socketRef.current = io("http://localhost:4000");
+    socketRef.current = io(import.meta.env.VITE_BACKEND_URL);
 
     //Connection successful hua
     socketRef.current.on("connect", () => {
